@@ -38,3 +38,42 @@
 |  [!] RISK POSTURE FOUND   : Exposed logistics tracking API discovered. |
 |                                                                        |
 +------------------------------------------------------------------------+
+
+
+## 🚀 DEPLOYMENT & INITIALIZATION PROTOCOL
+
+Follow these steps to synchronize this intelligence matrix to your local command line environment. This framework is cross-compatible with standard Linux systems and optimized for mobile access via Termux.
+
+### 📲 Option A: Termux (Mobile Sandbox) Installation
+```bash
+# Step 1: Synchronize local system packages
+pkg update && pkg upgrade -y
+
+# Step 2: Install required deployment environmental dependencies
+pkg install git python -y
+
+# Step 3: Clone the intelligence core framework
+git clone [https://github.com/kaljitech/KaljiCarrierIntel.git](https://github.com/kaljitech/KaljiCarrierIntel.git)
+
+# Step 4: Navigate into the operational repository terminal
+cd KaljiCarrierIntel
+
+# Step 5: Initialize the local host matrix loop
+python carrier_intel.py
+
+
+# Step 1: Update your local environment dependencies
+sudo apt update && sudo apt upgrade -y
+
+# Step 2: Ensure git and python3 runtimes are provisioned
+sudo apt install git python3 -y
+
+# Step 3: Pull down the core directory node
+git clone [https://github.com/kaljitech/KaljiCarrierIntel.git](https://github.com/kaljitech/KaljiCarrierIntel.git)
+
+# Step 4: Enter the localized repository file matrix
+cd KaljiCarrierIntel
+
+# Step 5: Arm the engine interface
+chmod +x carrier_intel.py
+./carrier_intel.py
