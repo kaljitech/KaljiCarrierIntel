@@ -16,7 +16,7 @@ def clear_screen():
 def menu():
     print("\033[92m⚓ KALJICARRIERINTEL // REAL-TIME OSINT GRID [ACTIVE]\033[0m\n")
     print("==================================================")
-    print("[1] Scan commercial fleet positions (LIVE REAL-WORLD DATA)")
+    print("[1] Scan commercial fleet positions (LIVE REAL DATA)")
     print("[2] Cross-check cargo routing (LIVE)")
     print("[3] Terminate session")
     print("==================================================")
@@ -25,58 +25,66 @@ def scan_fleet():
     print("\033[96m[*] Querying open-source AIS telemetry API (Baltic Sea Feed)...\033[0m")
     time.sleep(1.0)
     
-    # This is a REAL, live public vessel tracking API endpoint
-    url = "https://vessel.digitraffic.fi/api/v1/vessels"
+    # FIXED: The correct live server endpoint
+    url = "https://meri.digitraffic.fi/api/ais/v1/locations"
+    headers = {
+        "User-Agent": "KaljiCarrierIntel/1.0 (Open-Source OSINT Tool)"
+    }
     
     try:
-        response = requests.get(url, timeout=10)
+        response = requests.get(url, headers=headers, timeout=10)
         response.raise_for_status()
         
-        # The API sends back data in GeoJSON format
         raw_data = response.json()
-        vessels = raw_data.get("features", [])
+        real_ships = []
         
-        if not vessels:
-            print("\033[91m[-] No vessels found in the live stream right now.\033[0m")
+        # Parse the live GeoJSON data structure safely
+        if isinstance(raw_data, dict) and "features" in raw_data:
+            vessels = raw_data.get("features", [])
+            for v in vessels[:4]:  # Extract the top 4 live ships moving right now
+                props = v.get("properties", {})
+                geom = v.get("geometry", {})
+                coords = geom.get("coordinates", [0, 0])
+                
+                real_ships.append({
+                    "vessel_mmsi": props.get("mmsi"),
+                    "lat": coords[1] if len(coords) > 1 else 0,
+                    "lon": coords[0] if len(coords) > 0 else 0,
+                    "speed_knots": props.get("sog"),
+                    "heading_deg": props.get("cog"),
+                    "nav_status": props.get("navStatus")
+                })
+        elif isinstance(raw_data, list):
+            for v in raw_data[:4]:
+                real_ships.append({
+                    "vessel_mmsi": v.get("mmsi"),
+                    "lat": v.get("latitude"),
+                    "lon": v.get("longitude"),
+                    "speed_knots": v.get("speedOverGround"),
+                    "heading_deg": v.get("courseOverGround")
+                })
+                
+        if not real_ships:
+            print("\033[91m[-] No active vessel telemetry streams found at this timestamp.\033[0m")
             return
             
         print("\033[92m[+] LIVE TELEMETRY STREAM ONLINE. PARSING REAL DATA...\033[0m\n")
         time.sleep(0.5)
         
-        # Let's extract the top 4 actual live ships currently moving in the water
-        real_ships = []
-        for v in vessels[:4]:
-            properties = v.get("properties", {})
-            geometry = v.get("geometry", {})
-            coordinates = geometry.get("coordinates", [0, 0])
-            
-            ship_info = {
-                "vessel_mmsi": properties.get("mmsi"),
-                "vessel_name": properties.get("name", "UNKNOWN CLASS"),
-                "lat": coordinates[1],
-                "lon": coordinates[0],
-                "speed_knots": properties.get("sog"),  # Speed Over Ground
-                "heading_deg": properties.get("cog"),  # Course Over Ground
-                "timestamp_epoch": properties.get("timestamp")
-            }
-            real_ships.append(ship_info)
-            
-        # Output the actual, real live JSON feed
         output = {
             "status": "SUCCESS",
-            "source": "Digitraffic Marine API",
-            "total_active_tracked": len(vessels),
-            "sample_fleet": real_ships
+            "source": "Fintraffic Marine Open Data Grid",
+            "live_tracking_nodes": real_ships
         }
         print(json.dumps(output, indent=2))
         
     except Exception as e:
-        print(f"\033[91m[-] API Error: Could not reach live server. Reason: {e}\033[0m")
+        print(f"\033[91m[-] API Error: Could not fetch grid coordinates. Reason: {e}\033[0m")
 
 def cross_check():
     print("\033[96m[*] Pinging open marine data nodes...\033[0m")
     time.sleep(1.0)
-    print("\033[93m[!] Operational Notice: Cargo routing requires private carrier API keys.\033[0m")
+    print("\033[93m[!] Operational Notice: Cargo manifests require private commercial tokens.\033[0m")
     print("\033[91m[-] Service offline.\033[0m")
 
 def main():
