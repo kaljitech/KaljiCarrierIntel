@@ -16,46 +16,68 @@ def clear_screen():
 def menu():
     print("\033[92m⚓ KALJICARRIERINTEL // REAL-TIME OSINT GRID [ACTIVE]\033[0m\n")
     print("==================================================")
-    print("[1] Scan commercial fleet positions (LIVE)")
+    print("[1] Scan commercial fleet positions (LIVE REAL-WORLD DATA)")
     print("[2] Cross-check cargo routing (LIVE)")
     print("[3] Terminate session")
     print("==================================================")
 
 def scan_fleet():
-    print("\033[96m[*] Accessing global AIS telemetry (live feed)...\033[0m")
-    time.sleep(1.5)
+    print("\033[96m[*] Querying open-source AIS telemetry API (Baltic Sea Feed)...\033[0m")
+    time.sleep(1.0)
     
-    # CHANGE THIS URL BELOW TO YOUR ACTUAL LIVE API ENDPOINT LATER IF YOU HAVE ONE!
-    url = "https://api.vesseltracker.com/v1/live" 
+    # This is a REAL, live public vessel tracking API endpoint
+    url = "https://vessel.digitraffic.fi/api/v1/vessels"
     
     try:
-        # 1. Tries to connect to the web address with a 5-second limit
-        response = requests.get(url, timeout=5)
-        
-        # 2. Checks if the website returned a broken error page (like a 404 or 500 error)
+        response = requests.get(url, timeout=10)
         response.raise_for_status()
         
-        # 3. Tries to read the JSON safely
-        data = response.json()
-        print("\033[92m[+] Data successfully fetched!\033[0m")
-        print(json.dumps(data, indent=2))
+        # The API sends back data in GeoJSON format
+        raw_data = response.json()
+        vessels = raw_data.get("features", [])
         
-    except requests.exceptions.HTTPError as http_err:
-        print(f"\033[91m[-] HTTP error occurred: {http_err}\033[0m")
-        print("\033[93m[!] OFFLINE MODE ACTIVE\033[0m")
+        if not vessels:
+            print("\033[91m[-] No vessels found in the live stream right now.\033[0m")
+            return
+            
+        print("\033[92m[+] LIVE TELEMETRY STREAM ONLINE. PARSING REAL DATA...\033[0m\n")
+        time.sleep(0.5)
         
-    except json.JSONDecodeError:
-        print("\033[91m[-] ERROR: The server did not send back valid JSON data.\033[0m")
-        print("\033[93m[!] OFFLINE MODE ACTIVE\033[0m")
+        # Let's extract the top 4 actual live ships currently moving in the water
+        real_ships = []
+        for v in vessels[:4]:
+            properties = v.get("properties", {})
+            geometry = v.get("geometry", {})
+            coordinates = geometry.get("coordinates", [0, 0])
+            
+            ship_info = {
+                "vessel_mmsi": properties.get("mmsi"),
+                "vessel_name": properties.get("name", "UNKNOWN CLASS"),
+                "lat": coordinates[1],
+                "lon": coordinates[0],
+                "speed_knots": properties.get("sog"),  # Speed Over Ground
+                "heading_deg": properties.get("cog"),  # Course Over Ground
+                "timestamp_epoch": properties.get("timestamp")
+            }
+            real_ships.append(ship_info)
+            
+        # Output the actual, real live JSON feed
+        output = {
+            "status": "SUCCESS",
+            "source": "Digitraffic Marine API",
+            "total_active_tracked": len(vessels),
+            "sample_fleet": real_ships
+        }
+        print(json.dumps(output, indent=2))
         
     except Exception as e:
-        print(f"\033[91m[-] Connection error: {e}\033[0m")
-        print("\033[93m[!] OFFLINE MODE ACTIVE\033[0m")
+        print(f"\033[91m[-] API Error: Could not reach live server. Reason: {e}\033[0m")
 
 def cross_check():
-    print("\033[96m[*] Pinging global logistics API...\033[0m")
-    time.sleep(1.5)
-    print("\033[91m[-] API error - but service is still simulated.\033[0m")
+    print("\033[96m[*] Pinging open marine data nodes...\033[0m")
+    time.sleep(1.0)
+    print("\033[93m[!] Operational Notice: Cargo routing requires private carrier API keys.\033[0m")
+    print("\033[91m[-] Service offline.\033[0m")
 
 def main():
     while True:
@@ -73,11 +95,11 @@ def main():
         else:
             print("Invalid choice. Try again.")
             
-        input("\nPress Enter to return...")
+        input("\n\033[93mPress Enter to return...\033[0m")
 
 if __name__ == "__main__":
     try:
         main()
     except KeyboardInterrupt:
         print("\n\033[91mKeyboardInterrupt\033[0m")
-        input("\nPress Enter to return...")
+        sys.exit()
